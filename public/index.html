@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trade Assistant</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0b0e14;
+            color: #e1e6ed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 95vh;
+            background: #151a23;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #232a3b;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            background: #1a202c;
+            border-bottom: 1px solid #232a3b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header h2 {
+            font-size: 18px;
+            color: #38bdf8;
+        }
+
+        .chat-header span {
+            font-size: 12px;
+            color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+
+        /* Area Percakapan */
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .msg-user {
+            align-self: flex-end;
+            background: #0284c7;
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .msg-ai {
+            align-self: flex-start;
+            background: #1e2636;
+            color: #e1e6ed;
+            border: 1px solid #2d3748;
+            border-bottom-left-radius: 2px;
+        }
+
+        /* Tampilan Gambar Preview di Pesan User */
+        .msg-image {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* Card Signal khusus hasil AI */
+        .signal-card {
+            background: #111722;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .badge-buy { color: #4ade80; }
+        .badge-sell { color: #f87171; }
+
+        /* Preview Sebelum Kirim */
+        .image-preview-container {
+            display: none;
+            padding: 8px 16px;
+            background: #1a202c;
+            border-top: 1px solid #232a3b;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preview-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .btn-remove-img {
+            background: none;
+            border: none;
+            color: #f87171;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Input Bar */
+        .input-box {
+            padding: 12px;
+            background: #1a202c;
+            border-top: 1px solid #232a3b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add-file {
+            background: #2d3748;
+            color: #38bdf8;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .btn-add-file:hover {
+            background: #3b485d;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: #0b0e14;
+            border: 1px solid #2d3748;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .chat-input:focus {
+            border-color: #38bdf8;
+        }
+
+        .btn-send {
+            background: #0284c7;
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-send:hover {
+            background: #0369a1;
+        }
+
+        .btn-send:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h2>AI Trade Assistant</h2>
+        <span>Online</span>
+    </div>
+
+    <!-- Chat Box -->
+    <div class="chat-box" id="chat-box">
+        <div class="message msg-ai">
+            Halo! Saya asisten AI Trading. Anda bisa menanyakan analisis teknikal via teks, atau tekan tombol <strong>(+)</strong> di bawah untuk mengunggah gambar chart.
+        </div>
+    </div>
+
+    <!-- Preview Gambar Terpilih -->
+    <div class="image-preview-container" id="preview-container">
+        <img id="img-preview" class="preview-thumb" src="" alt="preview">
+        <span style="font-size: 12px; color: #94a3b8;" id="preview-filename">chart.png</span>
+        <button class="btn-remove-img" id="btn-remove">✕</button>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-box">
+        <!-- Tombol Tambah Gambar (+) -->
+        <button class="btn-add-file" onclick="document.getElementById('file-input').click()">+</button>
+        <input type="file" id="file-input" accept="image/*">
+
+        <!-- Input Teks Chat -->
+        <input type="text" class="chat-input" id="chat-text" placeholder="Tanyakan sesuatu atau analisis chart..." onkeypress="if(event.key === 'Enter') sendMessage()">
+
+        <!-- Tombol Kirim -->
+        <button class="btn-send" id="btn-send" onclick="sendMessage()">Kirim</button>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('file-input');
+    const previewContainer = document.getElementById('preview-container');
+    const imgPreview = document.getElementById('img-preview');
+    const previewFilename = document.getElementById('preview-filename');
+    const btnRemove = document.getElementById('btn-remove');
+    const chatBox = document.getElementById('chat-box');
+    const chatText = document.getElementById('chat-text');
+    const btnSend = document.getElementById('btn-send');
+
+    let selectedFile = null;
+
+    // Handle Upload Gambar
+    fileInput.addEventListener('change', (e) => {
+        selectedFile = e.target.files[0];
+        if (selectedFile) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                imgPreview.src = evt.target.result;
+                previewFilename.innerText = selectedFile.name;
+                previewContainer.style.display = 'flex';
+            }
+            reader.readAsDataURL(selectedFile);
+        }
+    });
+
+    // Reset Gambar
+    btnRemove.addEventListener('click', () => {
+        selectedFile = null;
+        fileInput.value = '';
+        previewContainer.style.display = 'none';
+    });
+
+    // Fungsi Kirim Pesan
+    async function sendMessage() {
+        const text = chatText.value.trim();
+
+        if (!text && !selectedFile) return;
+
+        // Render Pesan User ke Chat UI
+        let userMsgHTML = '';
+        if (selectedFile) {
+            userMsgHTML += `<img src="${imgPreview.src}" class="msg-image">`;
+        }
+        if (text) {
+            userMsgHTML += `<div>${text}</div>`;
+        } else if (selectedFile) {
+            userMsgHTML += `<div><i>[Mengunggah Gambar Chart...]</i></div>`;
+        }
+
+        appendMessage(userMsgHTML, 'msg-user');
+
+        // Reset Input Box & Preview
+        const fileToSend = selectedFile;
+        const textToSend = text;
+        
+        chatText.value = '';
+        btnRemove.click();
+        
+        btnSend.disabled = true;
+
+        // Render Loading Bubble dari AI
+        const loadingId = appendMessage('AI sedang berpikir...', 'msg-ai');
+
+        try {
+            const formData = new FormData();
+            if (fileToSend) formData.append('chart', fileToSend);
+            if (textToSend) formData.append('prompt', textToSend);
+
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            const loadingElem = document.getElementById(loadingId);
+
+            if (result.success) {
+                const data = result.data;
+                
+                // Format balasan AI jika ada data sinyal angka
+                if (data.signal) {
+                    loadingElem.innerHTML = `
+                        <div>Hasil Analisis Chart:</div>
+                        <div class="signal-card">
+                            <div class="signal-header">
+                                <span>Signal</span>
+                                <span class="${data.signal.toUpperCase() === 'BUY' ? 'badge-buy' : 'badge-sell'}">${data.signal}</span>
+                            </div>
+                            <div class="data-row"><span>Entry</span><strong>$${data.entry}</strong></div>
+                            <div class="data-row"><span>Stop Loss</span><strong style="color:#f87171">$${data.sl}</strong></div>
+                            <div class="data-row"><span>Take Profit 1</span><strong style="color:#4ade80">$${data.tp1}</strong></div>
+                            <div class="data-row"><span>Take Profit 2</span><strong style="color:#4ade80">$${data.tp2}</strong></div>
+                            <div class="data-row"><span>R:R Ratio</span><strong>${data.rr}</strong></div>
+                        </div>
+                    `;
+                } else if (data.reply) {
+                    // Balasan percakapan teks biasa dari AI
+                    loadingElem.innerHTML = data.reply;
+                }
+            } else {
+                loadingElem.innerText = result.message || 'Terjadi kesalahan.';
+            }
+        } catch (err) {
+            document.getElementById(loadingId).innerText = 'Gagal terhubung ke server.';
+        } finally {
+            btnSend.disabled = false;
+            scrollToBottom();
+        }
+    }
+
+    function appendMessage(content, className) {
+        const msgDiv = document.createElement('div');
+        const id = 'msg-' + Date.now();
+        msgDiv.id = id;
+        msgDiv.className = `message ${className}`;
+        msgDiv.innerHTML = content;
+        chatBox.appendChild(msgDiv);
+        scrollToBottom();
+        return id;
+    }
+
+    function scrollToBottom() {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
+</body>
+  </html>
+  
